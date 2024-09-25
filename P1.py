@@ -3,7 +3,7 @@ import random
 MAXCAP = 30
 POBLACION = 10
 GENERACIONES = 50
-PROBABILIDAD = 0.85
+PROBABILIDAD_CRUCE = 0.85
 PROBABILIDAD_MUTACION = 0.1
 
 class Producto:
@@ -69,6 +69,32 @@ def mutar(individuo):
     for i in range(len(individuo)):
         if random.random()< PROBABILIDAD_MUTACION:
             individuo[i]= 1 - individuo[i]
+
+def main():
+    poblacion= generar_poblacion(POBLACION)
+
+    for _ in range (GENERACIONES):
+        nueva_poblacion=[]
+        for _ in range(POBLACION //2):
+            padre1 , padre2 =seleccionar_padres(poblacion)
+
+            if random.random()< PROBABILIDAD_CRUCE:
+
+                 hijo1, hijo2 = cruzar(padre1, padre2)
+            else:
+                hijo1, hijo2 = padre1, padre2
+            mutar(hijo1)
+            mutar(hijo2)
+            nueva_poblacion.extend([hijo1, hijo2])
+        poblacion = nueva_poblacion
+
+    mejor_individuo = max(poblacion, key=evaluar_individuo)
+    print("Mejor individuo:", mejor_individuo)
+    print("Valor máximo:", evaluar_individuo(mejor_individuo))
+
+if __name__ == "__main__":
+    main()
+
 
 
             
