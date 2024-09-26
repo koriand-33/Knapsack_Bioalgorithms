@@ -1,162 +1,133 @@
 import random
 
-
-MAXCAP = 30
+# Configuración
+CAPACIDAD = 30
 POBLACION = 10
 GENERACIONES = 50
 PROBABILIDAD_CRUCE = 0.85
 PROBABILIDAD_MUTACION = 0.1
-N_COMBINACIONES = 5  
 
+# Items
+peso = [4, 2, 5, 5, 2, 1.5, 1]
+costo = [10, 8, 12, 6, 3, 2, 2]
+restriction = [0, 3, 0, 2, 0, 0, 0]
+n = len(peso)
 
-class Producto:
-    def __init__(self, nombre, peso, precio=None):
-        self.nombre = nombre
-        self.peso = peso
-        self.precio = precio
+# Funciones
 
+# Validar que el cromosoma no exceda el peso máximo permitido
+def evaluar_individuo(individuo):
+    peso_total = sum(individuo[i] * peso[i] for i in range(n))
+    return peso_total <= CAPACIDAD
 
-productos = [
-    Producto("Decoy Detonator", 4, 10),
-    Producto("Love Potion", 2, 8),
-    Producto("Extendable Ears", 5, 12),
-    Producto("Skiving Snackbox", 5, 6),
-    Producto("Fever Fudge", 2, 3),
-    Producto("Puking Pastilles", 1.5),
-    Producto("Nosebleed Nougat", 1, 2)
-]
-
-
+# Generar un cromosoma válido
 def generar_individuo():
-    individuo = [0] * len(productos)  
-
-    # Asegura que haya al menos 3 Love Potions y 2 Skiving Snackboxes
-    individuo[1] = 3  # Love Potions
-    individuo[3] = 2  # Skiving Snackboxes
-    
-    # Rellena el resto aleatoriamente (puede ser 0 o 1)
-    for i in range(len(productos)):
-        if i != 1 and i != 3:  # No afectar los índices de Love Potions y Snackboxes
-            individuo[i] = random.randint(0, 1)
-
+    individuo = [random.randint(restriction[i], 10) for i in range(n)]
+    while not evaluar_individuo(individuo):
+        individuo = [random.randint(restriction[i], 10) for i in range(n)]
     return individuo
 
-# Función para evaluar un individuo
-def evaluar_individuo(individuo):
-    peso_total = sum(individuo[i] * productos[i].peso for i in range(len(productos)))
-    valor_total = sum(individuo[i] * (productos[i].precio or 0) for i in range(len(productos)))
+# Generar la población inicial
+def generar_poblacion():
+    poblacion = [generar_individuo() for _ in range(POBLACION)]
+    return poblacion
 
-    count_love_potion = sum(individuo[i] for i in range(len(productos)) if productos[i].nombre == "Love Potion")
-    count_skiving_snackbox = sum(individuo[i] for i in range(len(productos)) if productos[i].nombre == "Skiving Snackbox")
+# Evaluar el valor total de un individuo
+def valor_total(individuo):
+    return sum(individuo[i] * costo[i] for i in range(n))
 
-    if peso_total > MAXCAP:
-        return 0, False  # Peso excedido, individuo no válido
-
-    if count_love_potion < 3 or count_skiving_snackbox < 2:
-        return 0, False  # Individuo inválido, pocas Love Potions o Snackboxes
-
-    return valor_total, True  
-
-def generar_poblacion(tamano):
-    return [generar_individuo() for _ in range(tamano)]
-
-def seleccionar_padres(poblacion):
-    fitness_totales = [evaluar_individuo(individuo)[0] for individuo in poblacion]
-    suma_fitness = sum(fitness_totales)
-    seleccionados = []
-
-    for _ in range(2):
-        punto_ruleta = random.uniform(0, suma_fitness)
-        acumulado = 0
-
-        for i, fitness in enumerate(fitness_totales):
-            acumulado += fitness
-            if acumulado >= punto_ruleta:
-                seleccionados.append(poblacion[i])
-                break
-
-    return seleccionados
-
-def cruzar(padre1, padre2):
-    hijo1 = []
-    hijo2 = []
+# Obtener las probabilidades acumuladas (ruleta)
+def obtener_probabilidades_acumuladas(poblacion):
+    valores_totales = [valor_total(individuo) for individuo in poblacion]
+    suma_total = sum(valores_totales)
+    probabilidades = [v / suma_total for v in valores_totales]
     
-    for i in range(len(productos)):
-        if random.random() < 0.5:  # Umbral de 50%
-            hijo1.append(padre1[i])  # Hereda del padre 1
-            hijo2.append(padre2[i])  # Hereda del padre 2
-        else:
-            hijo1.append(padre2[i])  # Hereda del padre 2
-            hijo2.append(padre1[i])  # Hereda del padre 1
+    acumulado = 0
+    probabilidades_acumuladas = []
+    for prob in probabilidades:
+        acumulado += prob
+        probabilidades_acumuladas.append(acumulado)
+    
+    return probabilidades_acumuladas
+
+# Selección de padres usando ruleta
+def seleccionar_padres(probabilidades_acumuladas):
+    def seleccionar():
+        r = random.uniform(0, 1)
+        for i, prob in enumerate(probabilidades_acumuladas):
+            if r < prob:
+                return i 
+        return len(probabilidades_acumuladas) - 1
+
+    padre1 = seleccionar()
+    padre2 = seleccionar()
+    while padre1 == padre2:
+        padre2 = seleccionar()
+
+    return padre1, padre2
+
+# Cruce entre dos individuos
+def cruzar(padre1, padre2):
+    hijo1, hijo2 = padre1[:], padre2[:]
+    if random.random() < PROBABILIDAD_CRUCE:
+        punto_cruce = random.randint(1, n - 1)
+        hijo1 = padre1[:punto_cruce] + padre2[punto_cruce:]
+        hijo2 = padre2[:punto_cruce] + padre1[punto_cruce:]
     
     return hijo1, hijo2
 
+# Mutar un individuo
 def mutar(individuo):
-    for i in range(len(individuo)):
+    for i in range(n):
         if random.random() < PROBABILIDAD_MUTACION:
-            individuo[i] = 1 - individuo[i]  
+            individuo[i] = random.randint(restriction[i], 10)
+    
+    while not evaluar_individuo(individuo):
+        individuo = [random.randint(restriction[i], 10) for i in range(n)]
+    
+    return individuo
 
+# Función principal
 def main():
-    mejor_combinacion_global = None
-    mejor_valor_global = 0
+    mejores_combinaciones = []
 
-    for n in range(N_COMBINACIONES): 
-        print(f"\nEvaluando combinación {n + 1}:")
-        poblacion = generar_poblacion(POBLACION)
+    poblacion = generar_poblacion()
 
-        for _ in range(GENERACIONES):
-            nueva_poblacion = []
-            for _ in range(POBLACION // 2):
-                padre1, padre2 = seleccionar_padres(poblacion)
+    for generacion in range(GENERACIONES):
+        probabilidades_acumuladas = obtener_probabilidades_acumuladas(poblacion)
+        nueva_poblacion = []
 
-                if random.random() < PROBABILIDAD_CRUCE:
-                    hijo1, hijo2 = cruzar(padre1, padre2)
-                else:
-                    hijo1, hijo2 = padre1, padre2
-                
-                mutar(hijo1)
-                mutar(hijo2)
-                nueva_poblacion.extend([hijo1, hijo2])
-            
-            poblacion = nueva_poblacion
+        for _ in range(POBLACION // 2):
+            # Selección de padres
+            idx_padre1, idx_padre2 = seleccionar_padres(probabilidades_acumuladas)
+            padre1 = poblacion[idx_padre1]
+            padre2 = poblacion[idx_padre2]
 
-        mejor_individuo = max(poblacion, key=lambda ind: evaluar_individuo(ind)[0])
-        valor_mejor, valido = evaluar_individuo(mejor_individuo)
+            # Cruce
+            hijo1, hijo2 = cruzar(padre1, padre2)
 
-        if valido:
-            print("Mejor individuo:", mejor_individuo)
-            print("Valor máximo:", valor_mejor)
+            # Mutación
+            hijo1 = mutar(hijo1)
+            hijo2 = mutar(hijo2)
 
-          #Pruebaaa
-            print("\nCombinación ideal para llevar en la mochila:")
-            total_peso = 0
-            total_valor = 0
+            nueva_poblacion.extend([hijo1, hijo2])
 
-            for i in range(len(mejor_individuo)):
-                if mejor_individuo[i] > 0:  
-                    cantidad = mejor_individuo[i]
-                    print(f"{productos[i].nombre}: {cantidad} unidades (Peso: {productos[i].peso}, Valor: {productos[i].precio})")
-                    total_peso += cantidad * productos[i].peso
-                    total_valor += cantidad * (productos[i].precio or 0)
+        poblacion = nueva_poblacion
 
-            print(f"Peso total: {total_peso} / {MAXCAP}, Valor total: {total_valor}\n")
+        # Almacenar las combinaciones actuales
+        for individuo in poblacion:
+            valor = valor_total(individuo)
+            peso_total = sum(individuo[j] * peso[j] for j in range(n))
+            mejores_combinaciones.append((individuo, valor, peso_total))
 
-            # Actualizar la mejor combinación global
-            if valor_mejor > mejor_valor_global:
-                mejor_valor_global = valor_mejor
-                mejor_combinacion_global = mejor_individuo
+    # Ordenar las combinaciones por el valor total
+    mejores_combinaciones.sort(key=lambda x: x[1], reverse=True)
 
-    # Imprimir la mejor combinación global al final
-    if mejor_combinacion_global:
-        print("\nMejor combinación global encontrada:")
-        total_peso_global = sum(mejor_combinacion_global[i] * productos[i].peso for i in range(len(productos)))
-        total_valor_global = sum(mejor_combinacion_global[i] * (productos[i].precio or 0) for i in range(len(productos)))
-
-        for i in range(len(mejor_combinacion_global)):
-            if mejor_combinacion_global[i] > 0:
-                print(f"{productos[i].nombre}: {mejor_combinacion_global[i]} unidades (Peso: {productos[i].peso}, Valor: {productos[i].precio})")
-
-        print(f"Peso total: {total_peso_global} / {MAXCAP}, Valor total: {total_valor_global}")
+    # Imprimir las 5 mejores combinaciones
+    print("\nLas 5 mejores combinaciones:")
+    for i in range(5):
+        individuo, valor, peso_total = mejores_combinaciones[i]
+        print(f"Combinación {i + 1}: {individuo}, Valor: {valor}, Peso: {peso_total}")
 
 if __name__ == "__main__":
     main()
