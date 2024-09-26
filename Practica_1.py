@@ -1,21 +1,21 @@
 import random
 
-# Parámetros del algoritmo
+
 MAXCAP = 30
 POBLACION = 10
 GENERACIONES = 50
 PROBABILIDAD_CRUCE = 0.85
 PROBABILIDAD_MUTACION = 0.1
-N_COMBINACIONES = 5  # Número de combinaciones que se quieren evaluar
+N_COMBINACIONES = 5  
 
-# Clase Producto
+
 class Producto:
     def __init__(self, nombre, peso, precio=None):
         self.nombre = nombre
         self.peso = peso
         self.precio = precio
 
-# Lista de productos
+
 productos = [
     Producto("Decoy Detonator", 4, 10),
     Producto("Love Potion", 2, 8),
@@ -26,9 +26,9 @@ productos = [
     Producto("Nosebleed Nougat", 1, 2)
 ]
 
-# Función para generar un individuo
+
 def generar_individuo():
-    individuo = [0] * len(productos)  # Inicializa con 0 (no lleva nada)
+    individuo = [0] * len(productos)  
 
     # Asegura que haya al menos 3 Love Potions y 2 Skiving Snackboxes
     individuo[1] = 3  # Love Potions
@@ -55,13 +55,11 @@ def evaluar_individuo(individuo):
     if count_love_potion < 3 or count_skiving_snackbox < 2:
         return 0, False  # Individuo inválido, pocas Love Potions o Snackboxes
 
-    return valor_total, True  # Retorna valor total y que es válido
+    return valor_total, True  
 
-# Función para generar la población inicial
 def generar_poblacion(tamano):
     return [generar_individuo() for _ in range(tamano)]
 
-# Método de selección por ruleta
 def seleccionar_padres(poblacion):
     fitness_totales = [evaluar_individuo(individuo)[0] for individuo in poblacion]
     suma_fitness = sum(fitness_totales)
@@ -79,7 +77,6 @@ def seleccionar_padres(poblacion):
 
     return seleccionados
 
-# Función para cruzar dos padres
 def cruzar(padre1, padre2):
     hijo1 = []
     hijo2 = []
@@ -94,18 +91,16 @@ def cruzar(padre1, padre2):
     
     return hijo1, hijo2
 
-# Función para mutar un individuo
 def mutar(individuo):
     for i in range(len(individuo)):
         if random.random() < PROBABILIDAD_MUTACION:
-            individuo[i] = 1 - individuo[i]  # Cambia de 0 a 1 o de 1 a 0
+            individuo[i] = 1 - individuo[i]  
 
-# Función principal
 def main():
     mejor_combinacion_global = None
     mejor_valor_global = 0
 
-    for n in range(N_COMBINACIONES):  # Repetir el proceso para N_COMBINACIONES
+    for n in range(N_COMBINACIONES): 
         print(f"\nEvaluando combinación {n + 1}:")
         poblacion = generar_poblacion(POBLACION)
 
@@ -132,13 +127,13 @@ def main():
             print("Mejor individuo:", mejor_individuo)
             print("Valor máximo:", valor_mejor)
 
-            # Imprimir detalles del mejor individuo
+          #Pruebaaa
             print("\nCombinación ideal para llevar en la mochila:")
             total_peso = 0
             total_valor = 0
 
             for i in range(len(mejor_individuo)):
-                if mejor_individuo[i] > 0:  # Si el individuo lleva ese producto
+                if mejor_individuo[i] > 0:  
                     cantidad = mejor_individuo[i]
                     print(f"{productos[i].nombre}: {cantidad} unidades (Peso: {productos[i].peso}, Valor: {productos[i].precio})")
                     total_peso += cantidad * productos[i].peso
