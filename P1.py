@@ -24,7 +24,7 @@ productos = [
 
 
 def generar_individuo():
-    return [random.radint(0,1) for _ in range(len(productos))]
+    return [random.randint(0,1) for _ in range(len(productos))]
 
 def evaluar_individuo(individuo):
     peso_total= sum(individuo[i] * productos[i].peso for i in range(len(productos)))
@@ -33,7 +33,7 @@ def evaluar_individuo(individuo):
     count_love_potion = sum(individuo[i] for i in range(len(productos)) if productos[i].nombre == "Love Potion")
     count_skiving_snackbox = sum(individuo[i] for i in range(len(productos)) if productos[i].nombre == "Skiving Snackbox")
 
-    if peso_total> MAXCAP or count_love_potion > 3 or count_skiving_snackbox > 3:
+    if peso_total> MAXCAP or count_love_potion < 3 or count_skiving_snackbox < 2:
         return 0
     return valor_total
 
@@ -42,7 +42,7 @@ def generar_poblacion(tamano):
 
 
 def seleccionar_padres(poblacion):
-    fitness_totales = [evaluar_individuo(individuo) for ind in poblacion]
+    fitness_totales = [evaluar_individuo(individuo) for individuo in poblacion]
     suma_fitness= sum(fitness_totales)
     seleccionados=[]
 
@@ -101,19 +101,8 @@ if __name__ == "__main__":
 
  
 
-     
+
+
 
     
-    
 
-    
-
-def main():
-    capacidad= MAXCAP
-    minLp= 3
-    minSS= 2 
-    
-
-
-if __name__ == "__main__":
-    main()
